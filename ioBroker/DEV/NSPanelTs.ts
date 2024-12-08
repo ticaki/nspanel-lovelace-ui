@@ -1185,7 +1185,7 @@ async function InitIoBrokerInfo() {
             await createStateAsync(NSPanel_Path + 'IoBroker.ScriptVersion', scriptVersion, { type: 'string', write: false });
             setObject(AliasPath + 'IoBroker.ScriptVersion', { type: 'channel', common: { role: 'info', name: 'Version NSPanelTS' }, native: {} });
             await createAliasAsync(AliasPath + 'IoBroker.ScriptVersion.ACTUAL', NSPanel_Path + 'IoBroker.ScriptVersion', true, <iobJS.StateCommon>{ type: 'string', role: 'state', name: 'ACTUAL' });
-            // NodeJS Verion
+            // NodeJS Version
             await createStateAsync(NSPanel_Path + 'IoBroker.NodeJSVersion', 'v' + nodeVersion, { type: 'string', write: false });
             setObject(AliasPath + 'IoBroker.NodeJSVersion', { type: 'channel', common: { role: 'info', name: 'Version NodeJS' }, native: {} });
             await createAliasAsync(AliasPath + 'IoBroker.NodeJSVersion.ACTUAL', NSPanel_Path + 'IoBroker.NodeJSVersion', true, <iobJS.StateCommon>{ type: 'string', role: 'state', name: 'ACTUAL' });
@@ -1204,7 +1204,7 @@ async function InitIoBrokerInfo() {
         }
         setIfExists(NSPanel_Path + 'IoBroker.ScriptVersion', scriptVersion, null, true);
     } catch (err: any) {
-        log('error at funktion InitIoBrokerInfo ' + err.message, 'warn');
+        log('error at function InitIoBrokerInfo ' + err.message, 'warn');
     }
 }
 InitIoBrokerInfo();
@@ -11936,7 +11936,7 @@ function rgb_dec565(rgb: RGB): number {    //return ((Math.floor(rgb.red / 255 *
  * @param rad radians to convert, expects rad in range +/- PI per Math.atan2
  * @returns {number} degrees equivalent of rad
  */
-function rad2deg(rad): number {
+function rad2deg(rad: number): number {
     return (360 + (180 * rad) / Math.PI) % 360;
 }
 
@@ -11978,7 +11978,27 @@ function hsv2rgb(hue: number, saturation: number, value: number): [number, numbe
     hue /= 60;
     let chroma = value * saturation;
     let x = chroma * (1 - Math.abs((hue % 2) - 1));
-    let rgb: [number, number, number] = hue <= 1 ? [chroma, x, 0] : hue <= 2 ? [x, chroma, 0] : hue <= 3 ? [0, chroma, x] : hue <= 4 ? [0, x, chroma] : hue <= 5 ? [x, 0, chroma] : [chroma, 0, x];
+    let rgb: [number, number, number] = [0, 0, 0];
+    switch (true) {
+        case hue <= 1:
+            rgb = [chroma, x, 0];
+            break;
+        case hue <= 2:
+            rgb = [x, chroma, 0];
+            break;
+        case hue <= 3:
+            rgb = [0, chroma, x];
+            break;
+        case hue <= 4:
+            rgb = [0, x, chroma];
+            break;
+        case hue <= 5:
+            rgb = [x, 0, chroma];
+            break;
+        default:
+            rgb = [chroma, 0, x];
+            break;
+    }
 
     return rgb.map((v) => (v + value - chroma) * 255) as [number, number, number];
 }
@@ -11994,24 +12014,25 @@ function hsv2rgb(hue: number, saturation: number, value: number): [number, numbe
  * @param {number} blue - The blue color value.
  * @returns {number} The hue value.
  */
-function getHue(red: number, green: number, blue: number): number {    let min = Math.min(Math.min(red, green), blue);
-    let max = Math.max(Math.max(red, green), blue);
+function getHue(red: number, green: number, blue: number): number {    
+    let min = Math.min(red, green, blue);
+    let max = Math.max(red, green, blue);
 
-    if (min == max) {
+    if (min === max) {
         return 0;
     }
 
     let hue = 0;
-    if (max == red) {
+    if (max === red) {
         hue = (green - blue) / (max - min);
-    } else if (max == green) {
+    } else if (max === green) {
         hue = 2 + (blue - red) / (max - min);
     } else {
         hue = 4 + (red - green) / (max - min);
     }
 
     hue = hue * 60;
-    if (hue < 0) hue = hue + 360;
+    if (hue < 0) hue += 360;
 
     return Math.round(hue);
 }
@@ -12028,20 +12049,15 @@ function getHue(red: number, green: number, blue: number): number {    let min =
  * @returns {RGB} The RGB color corresponding to the position.
  */
 function pos_to_color(x: number, y: number): RGB {
-    let r = 160 / 2;
-    x = Math.round(((x - r) / r) * 100) / 100;
-    y = Math.round(((r - y) / r) * 100) / 100;
+    const radius = 160 / 2;
+    x = Math.round(((x - radius) / radius) * 100) / 100;
+    y = Math.round(((radius - y) / radius) * 100) / 100;
 
-    r = Math.sqrt(x * x + y * y);
-    let sat = 0;
-    if (r > 1) {
-        sat = 0;
-    } else {
-        sat = r;
-    }
+    let distance = Math.sqrt(x * x + y * y);
+    let sat = distance > 1 ? 0 : distance;
 
-    let hsv = rad2deg(Math.atan2(y, x));
-    let rgb = hsv2rgb(hsv, sat, 1);
+    let hue = rad2deg(Math.atan2(y, x));
+    let rgb = hsv2rgb(hue, sat, 1);
 
     return { red: Math.round(rgb[0]), green: Math.round(rgb[1]), blue: Math.round(rgb[2]) };
 }
