@@ -14829,7 +14829,7 @@ type PageAlarm = NSPanel.PageAlarm;
  */
 function adapterSchedule (time: {hour?: number; minute?: number} | undefined | number, repeatTime: number, callback: () => void): number | null {
     if (typeof callback !== 'function') return null;
-    const ref = Math.random() + 1;
+    const ref = new Date().getTime() + Math.floor(Math.random() * 100000000);
     (scheduleList[ref] = setTimeout(_schedule, 1, time, ref, repeatTime, callback)), true;
     return ref;
 }
